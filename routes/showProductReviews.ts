@@ -27,13 +27,18 @@ global.sleep = (time: number) => {
 
 export function showProductReviews () {
   return (req: Request, res: Response, next: NextFunction) => {
-    // Truncate id to avoid unintentional RCE
-    const id = !utils.isChallengeEnabled(challenges.noSqlCommandChallenge) ? Number(req.params.id) : utils.trunc(req.params.id, 40)
+    // Product ids are numeric: coerce to a number and reject anything else
+    const id = Number(req.params.id)
+    if (!Number.isInteger(id)) {
+      res.status(400).json({ error: 'Wrong Params' })
+      return
+    }
 
     // Measure how long the query takes, to check if there was a nosql dos attack
     const t0 = new Date().getTime()
 
-    db.reviewsCollection.find({ $where: 'this.product == ' + id }).then((reviews: Review[]) => {
+    // Plain equality filter on a numeric value: no query syntax can be injected
+    db.reviewsCollection.find({ product: id }).then((reviews: Review[]) => {
       const t1 = new Date().getTime()
       challengeUtils.solveIf(challenges.noSqlCommandChallenge, () => { return (t1 - t0) > 2000 })
       const user = security.authenticatedUsers.from(req)
