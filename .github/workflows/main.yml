@@ -1,0 +1,32 @@
+name: Checkmarx Scan
+
+on:
+  push:
+    branches:
+    - main
+    - master
+
+  pull_request:
+    branches:
+    - master
+
+
+jobs:
+  run_checkmarx:
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    runs-on: self-hosted / ubuntu-latest
+    steps:
+        # Checks out the GitHub repository to GITHUB_WORKSPACE so that subsequent steps could act
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Checkmarx One CLI Action
+        uses: checkmarx/ast-github-action@main #Github Action version
+        with:
+          project_name: ${{ github.event.repository.clone_url }}
+          cx_tenant: egh
+          base_uri: https://eu-2.ast.checkmarx.net
+          cx_client_id: ${{ secrets.CX_CLIENT_ID }}
+          cx_client_secret: ${{ secrets.CX_CLIENT_SECRET }}
